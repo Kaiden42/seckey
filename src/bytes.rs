@@ -5,6 +5,8 @@ use core::ops::{ Deref, DerefMut };
 #[cfg(feature = "use_os")]
 use core::cell::Cell;
 
+#[cfg(feature = "mlock")]
+use memsec::{ mlock, munlock };
 #[cfg(feature = "use_os")]
 use memsec::{ mprotect, Prot };
 
@@ -72,6 +74,9 @@ impl SecBytes {
 
             #[cfg(feature = "use_os")]
             mprotect(memptr, Prot::NoAccess);
+            
+            #[cfg(feature = "mlock")]
+            mlock(memptr.as_ptr(), len);
 
             memptr
         };
@@ -145,6 +150,9 @@ impl Drop for SecBytes {
         unsafe {
             #[cfg(feature = "use_os")]
             mprotect(self.ptr, Prot::ReadWrite);
+
+            #[cfg(feature = "mlock")]
+            munlock(self.ptr.as_ptr(), self.len);
 
             alloc::free(self.ptr, self.len);
         }
